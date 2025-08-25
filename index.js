@@ -1,5 +1,4 @@
 import { Client, GatewayIntentBits, Partials, EmbedBuilder } from "discord.js";
-import fetch from "node-fetch";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -44,28 +43,27 @@ client.on("messageCreate", async (message) => {
   if (message.content.startsWith("!dm-embed")) {
     const args = message.content.split(" ");
     const userId = args[1];
-    const link = args[2];
+    const jsonString = args.slice(2).join(" ");
 
-    if (!userId || !link) {
-      return message.reply("❌ Usage: `!dm-embed <userId> <discohook_link>`");
+    if (!userId || !jsonString) {
+      return message.reply("❌ Usage: `!dm-embed <userId> <json_code>`");
     }
 
     try {
-      const response = await fetch(link);
-      const data = await response.json();
+      const embedData = JSON.parse(jsonString);
 
-      if (!data.embeds || !Array.isArray(data.embeds) || data.embeds.length === 0) {
-        return message.reply("❌ Invalid Discohook link or no embeds found.");
+      if (!embedData.embeds || !Array.isArray(embedData.embeds) || embedData.embeds.length === 0) {
+        return message.reply("❌ Invalid JSON code or no embeds found.");
       }
 
       const user = await client.users.fetch(userId);
-      const embeds = data.embeds.map(embedData => new EmbedBuilder(embedData));
+      const embeds = embedData.embeds.map(e => new EmbedBuilder(e));
 
       const sent = await user.send({ embeds });
       await message.reply(`✅ Embed sent. ID: **${sent.id}**`);
     } catch (err) {
       console.error(err);
-      await message.reply("❌ Failed to send embed. Check if the link is valid or the user has DMs open.");
+      await message.reply("❌ Failed to parse JSON. Make sure you pasted valid Discohook JSON.");
     }
   }
 });
@@ -75,3 +73,4 @@ client.once("ready", () => {
 });
 
 client.login(process.env.token);
+
